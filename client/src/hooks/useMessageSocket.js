@@ -18,7 +18,7 @@ const useMessageSocket = () => {
     if (!token || socketRef.current) return;
 
     try {
-      socketRef.current = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
+      socketRef.current = io(process.env.REACT_APP_API_URL || 'http://localhost:5001', {
         auth: {
           token: token
         },

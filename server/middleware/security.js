@@ -18,9 +18,19 @@ const corsOptions = {
       'https://www.communiconnect.com'
     ];
     
-    // En développement, autoriser localhost
+    // En développement, autoriser localhost et toutes les variantes
     if (process.env.NODE_ENV === 'development') {
-      allowedOrigins.push('http://localhost:3000', 'http://localhost:3001');
+      allowedOrigins.push(
+        'http://localhost:3000', 
+        'http://localhost:3001',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:3001'
+      );
+    }
+    
+    // Autoriser les requêtes OAuth Google (qui peuvent venir de différents domaines)
+    if (origin && origin.includes('accounts.google.com')) {
+      return callback(null, true);
     }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -35,7 +45,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
   exposedHeaders: ['X-Total-Count'],
   maxAge: 86400 // 24 heures
 };

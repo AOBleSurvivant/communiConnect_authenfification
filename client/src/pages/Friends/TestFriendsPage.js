@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
+import API_CONFIG from '../../config/api';
 
 const TestFriendsPage = () => {
   const [loading, setLoading] = useState(false);
@@ -12,7 +13,7 @@ const TestFriendsPage = () => {
     setError(null);
     
     try {
-      const response = await fetch(`http://localhost:5000/api${endpoint}`, {
+      const response = await fetch(`${API_CONFIG.API_URL}${endpoint}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

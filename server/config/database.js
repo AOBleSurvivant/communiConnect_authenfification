@@ -2,13 +2,13 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    // En mode développement, forcer l'utilisation de MongoDB local
+    // En mode développement, utiliser MongoDB Atlas
     if (process.env.NODE_ENV === 'development') {
-      const localMongoURI = 'mongodb://localhost:27017/communiconnect';
-      console.log('📝 Mode développement: tentative de connexion à MongoDB local:', localMongoURI);
+      const atlasURI = 'mongodb+srv://aob_communiconnectgn:Alpha.o.b5@cluster0.7z6yujq.mongodb.net/communiconnect?retryWrites=true&w=majority';
+      console.log('📝 Mode développement: connexion à MongoDB Atlas...');
       
       try {
-        const conn = await mongoose.connect(localMongoURI, {
+        const conn = await mongoose.connect(atlasURI, {
           useNewUrlParser: true,
           useUnifiedTopology: true,
           dbName: 'communiconnect',
@@ -17,11 +17,11 @@ const connectDB = async () => {
           socketTimeoutMS: 45000,
         });
         
-        console.log('✅ MongoDB local connecté:', conn.connection.host);
+        console.log('✅ MongoDB Atlas connecté:', conn.connection.host);
         global.mongoConnected = true;
         return conn;
-      } catch (localError) {
-        console.log('⚠️ MongoDB local non disponible, continuation sans base de données');
+      } catch (atlasError) {
+        console.log('⚠️ MongoDB Atlas non disponible, continuation sans base de données');
         global.mongoConnected = false;
         return null;
       }

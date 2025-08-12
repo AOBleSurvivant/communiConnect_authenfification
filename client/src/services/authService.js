@@ -1,11 +1,10 @@
 import axios from 'axios';
 import localPersistenceService from './localPersistenceService';
+import API_CONFIG, { buildAuthUrl } from '../config/api.js';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-// Configuration axios avec intercepteur pour le token
+// Configuration de base d'Axios pour l'authentification
 const authAPI = axios.create({
-  baseURL: `${API_URL}/auth`,
+  baseURL: API_CONFIG.API_URL, // Utilise directement l'URL de l'API sans ajouter /auth
   headers: {
     'Content-Type': 'application/json',
   },
@@ -87,7 +86,7 @@ const authService = {
 
   // Déconnexion
   logout: async () => {
-    const response = await authAPI.post('/logout');
+    const response = await authAPI.post('/auth/logout');
     
     // Nettoyer les données locales
     localPersistenceService.remove('profile');
@@ -112,7 +111,7 @@ const authService = {
         throw new Error('offline');
       }
 
-      const response = await authAPI.get('/me');
+      const response = await authAPI.get('/auth/me');
       
       // Sauvegarder localement les données utilisateur
       if (response.data.success && response.data.user) {

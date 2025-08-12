@@ -1,6 +1,7 @@
 import React from 'react';
 import { Avatar, Box, Typography } from '@mui/material';
 import { Person } from '@mui/icons-material';
+import API_CONFIG from '../../config/api';
 
 const DefaultAvatar = ({ 
   user, 
@@ -49,7 +50,7 @@ const DefaultAvatar = ({
     }
     
     // Sinon, ajouter le baseURL
-    const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const baseURL = API_CONFIG.BASE_URL;
     return `${baseURL}${profilePicture}`;
   };
 

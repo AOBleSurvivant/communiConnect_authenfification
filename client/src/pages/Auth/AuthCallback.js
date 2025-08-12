@@ -9,8 +9,9 @@ import {
   CircularProgress,
   Alert
 } from '@mui/material';
-import { CheckCircle, Error } from '@mui/icons-material';
-// import { login } from '../../store/slices/authSlice';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Error from '@mui/icons-material/Error';
+import { login } from '../../store/slices/authSlice';
 
 const AuthCallback = () => {
   const [searchParams] = useSearchParams();
@@ -39,7 +40,8 @@ const AuthCallback = () => {
         }
 
         // Envoyer le code au serveur pour échanger contre un token
-        const response = await fetch('http://localhost:5000/api/auth/oauth/callback', {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+        const response = await fetch(`${API_URL}/api/auth/oauth/callback`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -57,12 +59,11 @@ const AuthCallback = () => {
           throw new Error(data.message || 'Erreur lors de l\'authentification');
         }
 
-        // Connexion réussie: persister token et userId si disponible
-        localStorage.setItem('token', data.token);
-        if (data?.user?._id) {
-          localStorage.setItem('userId', data.user._id);
-        }
-        // Rediriger vers la page d'accueil après 2 secondes
+        // Connexion réussie: mettre à jour le state Redux et persister les données
+        dispatch(login({
+          user: data.user,
+          token: data.token
+        }));
         
         setStatus('success');
         

@@ -116,7 +116,7 @@ const notificationService = new NotificationService(server);
 const messageSocketService = new MessageSocketService(io);
 const pushNotificationService = new PushNotificationService();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware de sécurité CRITIQUE (appliqué en premier)
 app.use(helmetConfig);
@@ -195,25 +195,21 @@ if (!require('fs').existsSync(avatarsDir)) {
   require('fs').mkdirSync(avatarsDir, { recursive: true });
 }
 
-// Connexion à MongoDB (optionnelle en mode développement)
+// Connexion à MongoDB Atlas (toujours activée)
 const connectToMongoDB = async () => {
-  // En mode développement, ne pas essayer MongoDB du tout
-  if (process.env.NODE_ENV === 'development') {
-    console.log('📝 Mode développement: MongoDB désactivé, continuation sans base de données');
-    return false;
-  }
-  
   try {
-    // Utilise la config centralisée seulement en production
+    // Utilise la config centralisée MongoDB Atlas
     const connectDB = require('./config/database');
     const conn = await connectDB();
     if (conn) {
-      console.log('✅ Connexion à MongoDB établie');
+      console.log('✅ Connexion à MongoDB Atlas établie');
       return true;
     }
+    console.log('⚠️ MongoDB Atlas non disponible, continuation sans base de données');
     return false;
   } catch (error) {
-    console.error('❌ Erreur MongoDB:', error.message);
+    console.error('❌ Erreur MongoDB Atlas:', error.message);
+    console.log('⚠️ Continuation sans base de données');
     return false;
   }
 };
@@ -300,14 +296,8 @@ module.exports = { app, server, io };
 // Démarrage du serveur
 const startServer = async () => {
   try {
-    // En mode développement, pas de MongoDB
-    if (process.env.NODE_ENV === 'development') {
-      global.mongoConnected = false;
-      console.log('📝 Mode développement: MongoDB désactivé');
-    } else {
-      // En production, essayer MongoDB
-      global.mongoConnected = await connectToMongoDB();
-    }
+    // Toujours essayer MongoDB Atlas (développement et production)
+    global.mongoConnected = await connectToMongoDB();
   } catch (error) {
     console.log('⚠️ Erreur lors de l\'initialisation, continuation sans MongoDB');
     global.mongoConnected = false;

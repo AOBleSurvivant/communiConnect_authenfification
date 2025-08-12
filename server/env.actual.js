@@ -16,7 +16,7 @@ module.exports = {
   // Google OAuth 2.0 - REMPLACEZ PAR VOS VRAIES CLÉS
   GOOGLE_CLIENT_ID: 'your-google-client-id-here',
   GOOGLE_CLIENT_SECRET: 'your-google-client-secret-here',
-  GOOGLE_REDIRECT_URI: 'http://localhost:5000/api/auth/oauth/callback',
+  GOOGLE_REDIRECT_URI: 'http://localhost:3000/auth/callback',
   
   // Configuration CORS
   CORS_ORIGIN: 'http://localhost:3000',

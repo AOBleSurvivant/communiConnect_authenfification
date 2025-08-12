@@ -61,8 +61,32 @@ router.get('/status', (req, res) => {
       register: '/api/auth/register',
       login: '/api/auth/login',
       profile: '/api/auth/profile',
-      logout: '/api/auth/logout'
+      logout: '/api/auth/logout',
+      oauth: '/api/auth/oauth/callback'
     }
+  });
+});
+
+// GET /api/auth/oauth/status - Route pour vérifier la configuration OAuth
+router.get('/oauth/status', (req, res) => {
+  const oauthConfig = {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID ? '✅ Configuré' : '❌ Manquant',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ? '✅ Configuré' : '❌ Manquant',
+      redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/oauth/callback',
+      nodeEnv: process.env.NODE_ENV || 'development'
+    },
+    cors: {
+      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      enabled: true
+    }
+  };
+  
+  res.json({
+    success: true,
+    message: 'Configuration OAuth',
+    oauth: oauthConfig,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -473,12 +497,47 @@ router.post('/logout', (req, res) => {
 
 const axios = require('axios');
 
+// GET /api/auth/me - Récupérer le profil de l'utilisateur connecté
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Erreur récupération profil:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/auth/logout - Déconnexion de l'utilisateur
+router.post('/logout', auth, async (req, res) => {
+  try {
+    // En production, on pourrait invalider le token côté serveur
+    // Pour l'instant, on laisse le client supprimer le token
+    res.json({ success: true, message: 'Déconnexion réussie' });
+  } catch (error) {
+    console.error('Erreur déconnexion:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+});
+
 // POST /api/auth/oauth/callback - Callback OAuth pour Google
 router.post('/oauth/callback', async (req, res) => {
   try {
+    console.log('🔐 OAuth callback reçu:', { 
+      hasCode: !!req.body.code, 
+      hasState: !!req.body.state,
+      redirectUri: req.body.redirectUri,
+      origin: req.get('origin'),
+      userAgent: req.get('user-agent')
+    });
+
     const { code, state, redirectUri } = req.body;
 
     if (!code) {
+      console.log('❌ Code OAuth manquant');
       return res.status(400).json({
         success: false,
         message: 'Code d\'autorisation requis'
@@ -487,7 +546,14 @@ router.post('/oauth/callback', async (req, res) => {
 
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
     const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const googleRedirectUri = redirectUri || process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/auth/callback`;
+    const googleRedirectUri = redirectUri || process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/oauth/callback`;
+    
+    console.log('🔧 Configuration OAuth:', {
+      hasClientId: !!googleClientId,
+      hasClientSecret: !!googleClientSecret,
+      redirectUri: googleRedirectUri,
+      nodeEnv: process.env.NODE_ENV
+    });
 
     // Si des identifiants Google sont fournis, tenter un échange réel
     if (googleClientId && googleClientSecret) {
@@ -594,6 +660,53 @@ router.post('/oauth/callback', async (req, res) => {
 
     // Mode développement ou fallback: simuler une authentification OAuth réussie
     if (process.env.NODE_ENV === 'development') {
+      // Vérifier si MongoDB est connecté et l'utiliser en priorité
+      const mongoose = require('mongoose');
+      if (mongoose.connection?.readyState === 1) {
+        console.log('🔌 MongoDB Atlas disponible, création d\'un utilisateur de test...');
+        
+        try {
+          // Créer un utilisateur de test dans MongoDB Atlas
+          const testUser = await User.create({
+            email: 'test.oauth@communiconnect.com',
+            password: await require('bcryptjs').hash(crypto.randomBytes(12).toString('hex'), 10),
+            firstName: 'Test',
+            lastName: 'OAuth',
+            phone: '22412345678',
+            region: 'Conakry',
+            prefecture: 'Conakry',
+            commune: 'Kaloum',
+            quartier: 'Centre',
+            address: 'Adresse de test OAuth',
+            coordinates: { latitude: 9.537, longitude: -13.6785 },
+            dateOfBirth: new Date('1990-01-01'),
+            gender: 'Homme',
+            isVerified: true,
+            profilePicture: null
+          });
+          
+          console.log('✅ Utilisateur de test créé dans MongoDB Atlas:', testUser.email);
+          
+          const token = jwt.sign(
+            { userId: testUser._id, email: testUser.email },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '7d' }
+          );
+
+          return res.json({
+            success: true,
+            message: 'Connexion OAuth réussie avec MongoDB Atlas',
+            user: testUser,
+            token
+          });
+          
+        } catch (dbError) {
+          console.error('❌ Erreur création utilisateur MongoDB:', dbError.message);
+          // Fallback vers mock si erreur MongoDB
+        }
+      }
+      
+      // Fallback mock si MongoDB non disponible
       const mockUser = {
         _id: 'oauth-user-id',
         firstName: 'Utilisateur',
@@ -625,7 +738,7 @@ router.post('/oauth/callback', async (req, res) => {
 
       return res.json({
         success: true,
-        message: 'Connexion OAuth réussie',
+        message: 'Connexion OAuth réussie (mode mock)',
         user: mockUser,
         token
       });
